@@ -29,78 +29,85 @@ $(document).ready(() => {
 
         socket.on('pong', () => latency = Date.now() - startTime)
 
-        //Animation
-        socket.on('state-response', (obj) => {
+        //Game Socket Response
+        socket.on('game-state-start', (obj) => {
             switch (obj.type) {
                 case 1:
-                    for (let b1 of obj.data) {
-                        let found = 0
-                        for (let b2 of balls) {
-                            if (b2.id === b1.id)  {
-                                initObjects()
+                    for (let b1 of obj.data) initBallObjs(b1)
+                    balls = obj.data
 
-                                found = 1
-                                b2 = b1
-                                break
-                            }
+                break
+
+                case 2:
+                    const size = obj.data.size
+                    const space = obj.data.space
+                    const col = obj.data.col
+
+                    const screenWidth = (canvas.width / 2)
+                    const startX = screenWidth - ((col * size + (col - 1) * space) / 2)
+
+                    getBricks(obj.data.blocks, (block, x, y) => {
+                        block.x = (x * size + x * space) + startX
+                        block.y = y * size + y * space
+                        block.size = size
+
+                        if (block.imgUrl) {
+                            const img = new Image()
+                            img.src = block.imgUrl
+                            block.imageData = img
                         }
+                    }, () => wall = obj.data)
 
-                        if (found === 0) {
-                            initObjects()
-                            balls.push(b1)
-                        }
+                break
 
-                        function initObjects() {
-                            b1.trail = []
-                            b1.x = Math.random() * canvas.width
-                            b1.y = Math.random() * canvas.height
+            }
+        })
 
-                            if (b1.imgUrl) {
-                                const img = new Image();
-                                img.src = b1.imgUrl;
-                                b1.imageData = img
-                            }
+        socket.on('game-state-update', (obj) => {
+            let found = false
+
+            switch (obj.type) {
+                case 1:
+                    found = false
+                    for (let b of balls) {
+                        if (b.id === obj.data.id) {
+                            initBallObjs(obj.data)
+
+                            b = obj.data
+                            found = true
+                            break
                         }
                     }
 
-                    break
+                    if (!found) {
+                        initBallObjs(obj.data)
+
+                        balls.push(obj.data)
+                    }
+
+                break
 
                 case 2:
-                    if (!wall) {
-                        const size = obj.data.size
-                        const space = obj.data.space
-                        const col = obj.data.col
+                    if (wall) {
+                        found = false
+                        getBricks(wall.blocks, (block) => {
+                            if (block.id === obj.data.id) {
+                                block.userId = obj.data.userId
+                                block.imgUrl = obj.data.imgUrl
 
-                        const screenWidth = (canvas.width / 2)
-                        const startX = screenWidth - ((col * size + (col - 1) * space) / 2)
-
-                        getBricks(obj.data.blocks, (block, x, y) => {
-                            block.x = (x * size + x * space) + startX
-                            block.y = y * size + y * space
-                            block.size = size
-    
-                            if (block.imgUrl) {
-                                const img = new Image()
-                                img.src = block.imgUrl
-                                block.imageData = img
-                            }
-                        }, () => wall = obj.data)
-
-                    } else {
-                        getBricks(wall, (block, x, y) => {
-                            getBricks(obj.data.blocks, (block2, x, y) => {
-                                if (block.id === block2.id && !block.imgUrl && block2.imgUrl)  {
+                                if (block.imgUrl) {
                                     const img = new Image()
                                     img.src = block.imgUrl
                                     block.imageData = img
-
-                                    return true
                                 }
-                            })
+                                found = true
+                                return true
+                            }
+                        }, () => {
+                            if (!found) wall.blocks.push(obj.data)
                         })
                     }
-                    
-                    break
+                break
             }
         })
         anim()
@@ -262,6 +269,17 @@ $(document).ready(() => {
 
 
     //Utils
+    function initBallObjs(b1) {
+        b1.trail = []
+        b1.x = Math.random() * canvas.width
+        b1.y = Math.random() * canvas.height
+
+        if (b1.imgUrl) {
+            const img = new Image();
+            img.src = b1.imgUrl;
+            b1.imageData = img
+        }
+    }
 
     function updateBallTrail(ball) {
         ball.trail.push({ x : ball.x, y : ball.y});
@@ -276,7 +294,7 @@ $(document).ready(() => {
             for (let x = 0; x < arr.length; x++) {
                 for (let y = 0; y < arr[x].length; y++) {
                     result = callbak(arr[x][y], x, y)
-                    if (result) return
+                    if (result) return finish ? finish() : null
                 }
             }
         }

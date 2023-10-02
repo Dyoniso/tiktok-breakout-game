@@ -48,6 +48,8 @@ setInterval(() => {
 
             count++
         }
+
+        emitStateStartGlobal(2, wall)
     })
 }, 5000)
 
@@ -63,8 +65,8 @@ io.on('connection', (socket) => {
         socket.emit('pong')
     })
 
-    emitState(socket, 2, wall)
-    emitState(socket, 1, balls)
+    emitStartState(socket, 2, wall)
+    emitStartState(socket, 1, balls)
 
     socket.on('update-state', obj => {
         switch (obj.type) {
@@ -72,7 +74,7 @@ io.on('connection', (socket) => {
                 const block = obj.data
                 if (block) {
                     wall.replaceBlock(block)
-                    emitState(socket, 2, wall)
+                    emitUpdateState(socket, 2, block)
                 }
                 break
 
@@ -82,11 +84,10 @@ io.on('connection', (socket) => {
                     for (let b of balls) {
                         if (b.id === ball.id) {
                             b.status = ball.status
+                            emitUpdateState(socket, 1, b)
                             break
                         }
                     }
-    
-                    emitState(socket, 1, balls)
                 }
                 break
         }
@@ -136,25 +137,32 @@ function spawnRandomBall(userId, imgUrl) {
     ball.registerUser(userId, imgUrl)
     balls.push(ball)
 
-    emitStateGlobal(1, balls)
+    emitStateGlobal(1, ball)
 }
 
 function setBlockImagePixel(userId, imgUrl) {
     wall.getBlocks((block) => {
         if (block.status && block.isNotUser()) {
             block.registerUser(userId, imgUrl)
-            emitStateGlobal(2, wall)
+            emitStateGlobal(2, block)
             return true
         }
     })
 }
 
 //Emitter
-
-function emitStateGlobal(type, data) {
-    io.sockets.emit('state-response', { type : type, data : data })
+function emitStateStartGlobal(type, data) {
+    io.sockets.emit('game-state-start', { type : type, data : data })
 }
 
-function emitState(socket, type, data) {
-    socket.emit('state-response', { type : type, data : data })
+function emitStateGlobal(type, data) {
+    io.sockets.emit('game-state-update', { type : type, data : data })
+}
+
+function emitStartState(socket, type, data) {
+    socket.emit('game-state-start', { type : type, data : data })
+}
+
+function emitUpdateState(socket, type, data) {
+    socket.emit('game-state-update', { type : type, data : data })
 }
