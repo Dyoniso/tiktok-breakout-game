@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renderizar GIF no Canvas</title>
+  <style>
+    /* Estilos opcionais para o canvas */
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="400" height="400"></canvas>
+
+  <script>
+      const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const gifPath = window.location.origin + '/img/background.gif'; // Substitua pelo caminho do seu GIF
+const image = new Image();
+image.src = gifPath;
+
+let frames = [];  // Array para armazenar os frames
+let currentFrame = 0;
+let isPlaying = true;
+
+image.onload = function() {
+  const frameWidth = image.width;
+  const frameHeight = image.height;
+
+  // Divide o GIF em frames
+  for (let i = 0; i < image.width; i += frameWidth) {
+    const frame = document.createElement('canvas');
+    const frameContext = frame.getContext('2d');
+    frame.width = frameWidth;
+    frame.height = frameHeight;
+    frameContext.drawImage(image, i, 0, frameWidth, frameHeight, 0, 0, frameWidth, frameHeight);
+    frames.push(frame);
+  }
+
+  renderFrame();
+};
+
+function renderFrame() {
+  if (!isPlaying) return;
+
+  // Limpa o canvas antes de renderizar o próximo frame
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Desenha o frame atual no canvas
+  ctx.drawImage(frames[currentFrame], 0, 0);
+
+  // Atualiza o índice do frame
+  currentFrame = (currentFrame + 1) % frames.length;
+
+  // Agende a renderização do próximo frame
+  requestAnimationFrame(renderFrame);
+}
+
+// Inicia ou pausa a animação quando o canvas é clicado
+canvas.addEventListener('click', function() {
+  isPlaying = !isPlaying;
+  if (isPlaying) {
+    // Reinicia a animação se estiver sendo retomada
+    requestAnimationFrame(renderFrame);
+  }
+});
+  </script>
+</body>
+</html>

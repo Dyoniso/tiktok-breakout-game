@@ -7,6 +7,10 @@ $(document).ready(() => {
     canvas.width = window.screen.width;
     canvas.height = window.screen.height;
 
+    //Background Default Texture
+    const backgroundData = GIF()
+    backgroundData.load(window.location.origin + '/img/background.gif')
+
     //Connect Socket
     const socket = io(backEndUrl, { query : `width=${canvas.width}&height=${canvas.height}` })
 
@@ -39,6 +43,10 @@ $(document).ready(() => {
                 break
 
                 case 2:
+                    const image = new Image()
+                    image.src = window.location.origin + '/img/block-1.png'
+                    obj.data.imgData = image
+
                     const size = obj.data.size
                     const space = obj.data.space
                     const col = obj.data.col
@@ -142,8 +150,13 @@ $(document).ready(() => {
                 }
 
                 function drawDefault() {
-                    ctx.fillStyle = block.color
-                    ctx.fillRect(block.x, block.y, block.size, block.size)
+                    try {
+                        ctx.drawImage(wall.imgData, block.x, block.y, block.size, block.size)
+
+                    } catch (err) {
+                        ctx.fillStyle = block.color
+                        ctx.fillRect(block.x, block.y, block.size, block.size)
+                    }
                 }
 
                 if (block.imageData) {
@@ -160,8 +173,16 @@ $(document).ready(() => {
     }
 
     function renderBackground() {
-        ctx.fillStyle = 'black'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        try {
+            if (backgroundData.image) {
+                ctx.drawImage(backgroundData.image, 0, 0, canvas.width, canvas.height)
+            }
+        } catch (err) {
+            console.log(err)
+
+            ctx.fillStyle = 'black'
+            ctx.fillRect(0, 0, canvas.width, canvas.height)
+        }
     }
 
     function renderLatency() {
@@ -269,6 +290,7 @@ $(document).ready(() => {
 
 
     //Utils
+
     function initBallObjs(b1) {
         b1.trail = []
         b1.x = Math.random() * canvas.width
@@ -300,4 +322,7 @@ $(document).ready(() => {
         }
         if (finish) finish()
     }
+
+    //Particles
+
 })
