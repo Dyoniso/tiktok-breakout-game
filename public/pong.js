@@ -23,6 +23,40 @@ $(document).ready(() => {
     //Game Objects
     let balls = []
     let wall = null
+    let particles = []
+
+    class Particle {
+        constructor(x, y, r, life) {
+            this.startX = x
+            this.startY = y
+            this.r = 5 + Math.random() * r
+            this.life = 30 + Math.random() * life
+            this.remainingLife = this.life
+            this.startTime = Date.now()
+            this.animationDuration = 1000
+            
+            this.speed = {
+                x: -5 + Math.random() * 10,
+                y: -5 + Math.random() * 10
+            }
+        }
+
+        setRgb(arr) {
+            this.rgbArray = arr
+        }
+
+        draw = ctx => {            
+            if (this.remainingLife > 0 && this.r > 0) {
+                ctx.fillStyle = "rgba(" + this.rgbArray[0] + ',' + this.rgbArray[1] + ',' + this.rgbArray[2] + ", 1)"
+                ctx.fillRect(this.startX, this.startY, this.r, this.r)
+
+                this.remainingLife--
+                this.r -= 0.25
+                this.startX += this.speed.x
+                this.startY += this.speed.y
+            }
+        }
+    }
 
     socket.on('connect', () => {
         //Latency
@@ -44,6 +78,7 @@ $(document).ready(() => {
 
                 case 2:
                     const image = new Image()
+                    image.crossOrigin = "Anonymous";
                     image.src = window.location.origin + '/img/block-1.png'
                     obj.data.imgData = image
 
@@ -61,6 +96,7 @@ $(document).ready(() => {
 
                         if (block.imgUrl) {
                             const img = new Image()
+                            img.crossOrigin = "Anonymous";
                             img.src = block.imgUrl
                             block.imageData = img
                         }
@@ -105,6 +141,7 @@ $(document).ready(() => {
 
                                 if (block.imgUrl) {
                                     const img = new Image()
+                                    img.crossOrigin = "Anonymous";
                                     img.src = block.imgUrl
                                     block.imageData = img
                                 }
@@ -136,6 +173,7 @@ $(document).ready(() => {
         renderWall()
         renderLatency()
         renderBalls()
+        renderParticleExplosion()
         
         animId = requestAnimationFrame(anim)
     }
@@ -185,6 +223,21 @@ $(document).ready(() => {
         }
     }
 
+    function renderParticleExplosion() {
+        for(let i = 0; i < particles.length; i++) {
+            particles[i].draw(ctx);
+            
+            // Simple way to clean up if the last particle is done animating
+            if(i === particles.length - 1) {
+              let percent = (Date.now() - particles[i].startTime) / particles[i].animationDuration[i];
+              
+              if(percent > 1) {
+                particles = [];
+              }
+            }
+          }
+    }
+
     function renderLatency() {
         ctx.fillStyle = 'white'
         ctx.font = "18px Poppins";
@@ -205,13 +258,14 @@ $(document).ready(() => {
                 //Trail
                 updateBallTrail(ball)
 
-                for (let b2 of balls) {
+                /*for (let b2 of balls) {
                     if (ball !== b2 && ball.userId !== b2.userId && checkCollisionOtherBalls(ball, b2)) {
                         b2.status = false
+
                         socket.emit('update-state', { type : 2, data : b2 })
                         break
                     }
-                }
+                }*/
                 
                 for (let i = 0; i < ball.trail.length; i += 4) {
                     const opacity = i / ball.trail.length;
@@ -255,6 +309,9 @@ $(document).ready(() => {
                 if (checkWallColissionY(ball, dy)) ball.moveY = -ball.moveY
             }
 
+            //Generate Particle
+            spawnParticles(block.x, block.y)
+            
             block.status = false
             socket.emit('update-state', { type : 1, data : block })
         }
@@ -291,6 +348,20 @@ $(document).ready(() => {
 
     //Utils
 
+    function spawnParticles(x, y) {
+        let c = 0, max = 4
+
+        if (x !== 0 && y !== 0) {
+            const data = ctx.getImageData(0, 0, x, y).data
+
+            while (c++ <= max) {
+                let particle = new Particle(x, y, 8, 10)
+                particle.setRgb(data)
+                particles.push(particle)
+            }
+        }
+    }
+
     function initBallObjs(b1) {
         b1.trail = []
         b1.x = Math.random() * canvas.width
@@ -298,6 +369,7 @@ $(document).ready(() => {
 
         if (b1.imgUrl) {
             const img = new Image();
+            img.crossOrigin = "Anonymous";
             img.src = b1.imgUrl;
             b1.imageData = img
         }
@@ -322,7 +394,5 @@ $(document).ready(() => {
         }
         if (finish) finish()
     }
-
-    //Particles
 
 })
