@@ -104,12 +104,33 @@ tkCon.connect().then(state => {
 
     //Live Listeners
     tkCon.on('chat', p => {
-        setBlockImagePixel(p.userId, p.profilePictureUrl)
+        setBlockImagePixel(p.userId, p.profilePictureUrl, p.comment)
         logger.info(`[Live-Chat @${p.nickname}] ${p.comment}`)
     });
     tkCon.on('gift', msg => {
-        spawnRandomBall(msg.userId, msg.profilePictureUrl)
+        let found = false
+        for (let ball of balls) {
+            if (ball.userId === msg.userId)    {
+                ball.level++;
+                ball.size += msg.repeatCount <= 0 ? 1 : msg.repeatCount / 2;
+                found = true
+                emitStateGlobal(1, ball)
+                break
+            }
+        }
+
+        if (!found) spawnRandomBall(msg.userId, msg.profilePictureUrl)
         logger.info(`[Live-Gift ${msg.nickname}] Show de Bola!! Uma lenda contribuiu para Live! ID: ${msg.giftId} Repeat ${msg.repeatCount}`)
+    });
+    tkCon.on('like', msg => {
+        for (let ball of balls) {
+            if (ball.userId === msg.userId)    {
+                ball.addSpeed(msg.likeCount <= 0 ? 1 : msg.likeCount / 2)
+                emitStateGlobal(1, ball)
+                break
+            }
+        }
+        logger.info(`[Live-Like ${msg.nickname}] Curtiu a live x${msg.likeCount}`)
     });
 
     //con.on('social', msg => socket.emit('social', msg));
@@ -140,10 +161,11 @@ function spawnRandomBall(userId, imgUrl) {
     emitStateGlobal(1, ball)
 }
 
-function setBlockImagePixel(userId, imgUrl) {
+function setBlockImagePixel(userId, imgUrl, comment) {
     wall.getBlocks((block) => {
         if (block.status && block.isNotUser()) {
             block.registerUser(userId, imgUrl)
+            block.setMsg(comment)
             emitStateGlobal(2, block)
             return true
         }

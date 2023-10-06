@@ -93,6 +93,8 @@ $(document).ready(() => {
                         block.x = (x * size + x * space) + startX
                         block.y = y * size + y * space
                         block.size = size
+                        block.msg = obj.data.msg
+                        block.msgLife = 100
 
                         if (block.imgUrl) {
                             const img = new Image()
@@ -116,8 +118,11 @@ $(document).ready(() => {
                     for (let b of balls) {
                         if (b.id === obj.data.id) {
                             initBallObjs(obj.data)
-
-                            b = obj.data
+                            b.size = obj.data.size
+                            b.speed = obj.data.speed
+                            b.level = obj.data.level
+                            b.moveX = obj.data.moveX
+                            b.moveY = obj.data.moveY
                             found = true
                             break
                         }
@@ -138,6 +143,8 @@ $(document).ready(() => {
                             if (block.id === obj.data.id) {
                                 block.userId = obj.data.userId
                                 block.imgUrl = obj.data.imgUrl
+                                block.msg = obj.data.msg
+                                block.msgLife = 100
 
                                 if (block.imgUrl) {
                                     const img = new Image()
@@ -174,6 +181,7 @@ $(document).ready(() => {
         renderLatency()
         renderBalls()
         renderParticleExplosion()
+        renderBlocksMessagens()
         
         animId = requestAnimationFrame(anim)
     }
@@ -183,10 +191,6 @@ $(document).ready(() => {
     function renderWall() {
         if (wall) getBricks(wall.blocks, (block) => {
             if (block.status) {
-                for (let ball of balls) {
-                    updateBrickCollision(block, ball)
-                }
-
                 function drawDefault() {
                     try {
                         ctx.drawImage(wall.imgData, block.x, block.y, block.size, block.size)
@@ -200,11 +204,16 @@ $(document).ready(() => {
                 if (block.imageData) {
                     try {
                         ctx.drawImage(block.imageData, block.x, block.y, block.size, block.size)
+
                     } catch (err) {
                         drawDefault()
                     }
                 } else {
                     drawDefault()
+                }
+
+                for (let ball of balls) {
+                    updateBrickCollision(block, ball)
                 }
             }
         })
@@ -216,8 +225,6 @@ $(document).ready(() => {
                 ctx.drawImage(backgroundData.image, 0, 0, canvas.width, canvas.height)
             }
         } catch (err) {
-            console.log(err)
-
             ctx.fillStyle = 'black'
             ctx.fillRect(0, 0, canvas.width, canvas.height)
         }
@@ -244,6 +251,27 @@ $(document).ready(() => {
         ctx.fillText(`${latency} ms`, 10, 24)
     }
 
+    function renderBlocksMessagens() {
+        if (wall) {
+            getBricks(wall.blocks, (block) => {
+                if (block.msg && block.msgLife > 0) {
+                    const x = block.x - block.size
+                    const y = block.y + block.size
+        
+                    ctx.textBaseline = 'top';
+                    ctx.font = "14px Poppins";
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(x, y, ctx.measureText(block.msg).width, 14)
+        
+                    ctx.fillStyle = 'black'
+                    ctx.fillText(block.msg, x, y)
+        
+                    block.msgLife--;
+                }  
+            })
+        }
+    }
+
     function renderBalls() {
         for (let ball of balls) {
             if (ball.status) {
@@ -255,9 +283,6 @@ $(document).ready(() => {
                 if (checkCollisionY(ball, canvas.height)) ball.moveY = -ball.moveY
                 checkLimitCollision(ball, canvas.width, canvas.height)
 
-                //Trail
-                updateBallTrail(ball)
-
                 /*for (let b2 of balls) {
                     if (ball !== b2 && ball.userId !== b2.userId && checkCollisionOtherBalls(ball, b2)) {
                         b2.status = false
@@ -267,12 +292,6 @@ $(document).ready(() => {
                     }
                 }*/
                 
-                for (let i = 0; i < ball.trail.length; i += 4) {
-                    const opacity = i / ball.trail.length;
-                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                    ctx.fillRect(ball.trail[i].x, ball.trail[i].y, ball.size, ball.size)
-                }
-
                 function drawDefault() {
                     ctx.fillStyle = ball.color
                     ctx.fillRect(ball.x, ball.y, ball.size, ball.size)
@@ -280,7 +299,20 @@ $(document).ready(() => {
 
                 if (ball.imageData) {
                     try {
+                        // Render Trail
+                        let maxTrail = 3
+                        for (let i = 0; i < maxTrail; i++) {
+                            const opacity = 1 - (i / maxTrail)
+                            const move = i * (ball.speed * 2)
+                            const x = ball.moveX >= 0 ? ball.x - move : ball.x + move
+                            const y = ball.moveY >= 0 ? ball.y - move : ball.y + move
+
+                            ctx.fillStyle = ball.color.replace(', 1)', `, ${opacity})`)
+                            ctx.fillRect(x , y, ball.size, ball.size)
+                        }
+
                         ctx.drawImage(ball.imageData, ball.x, ball.y, ball.size, ball.size)
+
                     } catch (err) {
                         drawDefault()
                     }
@@ -310,7 +342,7 @@ $(document).ready(() => {
             }
 
             //Generate Particle
-            spawnParticles(block.x, block.y)
+            spawnParticles(block.x, block.y, block.size)
             
             block.status = false
             socket.emit('update-state', { type : 1, data : block })
@@ -334,10 +366,8 @@ $(document).ready(() => {
     }
 
     function checkLimitCollision(ball, w, h) {
-        if (ball.x < 0) ball.x = 10
-        if (ball.y <= 0) ball.y = 10
-        if (ball.x > w) ball.x = w * 0.9
-        if (ball.y > h) ball.y = h * 0.9
+        if (ball.x > w) ball.x = w / 2
+        if (ball.y > h) ball.y = h / 2
     }
 
     function checkCollisionOtherBalls(b1, b2) {
@@ -348,22 +378,19 @@ $(document).ready(() => {
 
     //Utils
 
-    function spawnParticles(x, y) {
-        let c = 0, max = 4
+    function spawnParticles(x, y, size) {
+        let c = 0, max = 10
 
-        if (x !== 0 && y !== 0) {
-            const data = ctx.getImageData(0, 0, x, y).data
+        const data = ctx.getImageData(x, y, size, size).data
 
-            while (c++ <= max) {
-                let particle = new Particle(x, y, 8, 10)
-                particle.setRgb(data)
-                particles.push(particle)
-            }
+        while (c++ <= max) {
+            let particle = new Particle(x, y, 8, 10)
+            particle.setRgb(data)
+            particles.push(particle)
         }
     }
 
     function initBallObjs(b1) {
-        b1.trail = []
         b1.x = Math.random() * canvas.width
         b1.y = Math.random() * canvas.height
 
@@ -372,13 +399,6 @@ $(document).ready(() => {
             img.crossOrigin = "Anonymous";
             img.src = b1.imgUrl;
             b1.imageData = img
-        }
-    }
-
-    function updateBallTrail(ball) {
-        ball.trail.push({ x : ball.x, y : ball.y});
-        if (ball.trail.length > ball.trailLen) {
-            ball.trail.shift();
         }
     }
 

@@ -11,11 +11,17 @@ module.exports = class Ball {
         this.color = color
         this.status = true
 
-        this.trailLen = 15
+        this.level = 1
     }
 
     registerUser(userId, imgUrl) {
         this.userId = userId
         this.imgUrl = imgUrl
+    }
+
+    addSpeed(speed) {
+        this.speed += speed
+        this.moveX += speed
+        this.moveY += speed
     }
 }

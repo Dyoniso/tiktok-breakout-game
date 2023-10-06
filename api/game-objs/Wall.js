@@ -4,7 +4,12 @@ class Block {
     constructor(color) {
         this.id = uuidv4()
         this.color = color
+        this.msg = null
         this.reset()
+    }
+
+    setMsg(m) {
+        this.msg = m
     }
 
     isNotUser() {
