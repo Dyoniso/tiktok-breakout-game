@@ -15,6 +15,7 @@ const WALL_ROW = parseInt(process.env.WALL_ROW)
 const WALL_COL = parseInt(process.env.WALL_COL)
 const BALL_SIZE = parseInt(process.env.BALL_SIZE)
 const BALL_SPEED = parseInt(process.env.BALL_SPEED)
+const BALL_MAX_SIZE = parseInt(process.env.BALL_MAX_SIZE)
 const WALL_BLOCKS_MIN = 4
 
 //Build Wall
@@ -84,6 +85,8 @@ io.on('connection', (socket) => {
                     for (let b of balls) {
                         if (b.id === ball.id) {
                             b.status = ball.status
+                            b.size = ball.size
+                            b.level = ball.level
                             emitUpdateState(socket, 1, b)
                             break
                         }
@@ -111,8 +114,7 @@ tkCon.connect().then(state => {
         let found = false
         for (let ball of balls) {
             if (ball.userId === msg.userId)    {
-                ball.level++;
-                ball.size += msg.repeatCount <= 0 ? 1 : msg.repeatCount / 2;
+                ball.addSize(msg.repeatCount <= 0 ? 1 : msg.repeatCount / 2)
                 found = true
                 emitStateGlobal(1, ball)
                 break
@@ -149,12 +151,12 @@ tkCon.connect().then(state => {
     Object.keys(io.sockets.sockets).forEach(function(s) {
         io.sockets.sockets[s].disconnect(true);
     })
-})
+}) 
 
 // Game
 
-function spawnRandomBall(userId, imgUrl) {
-    const ball = new Ball(BALL_SIZE, BALL_SPEED, Util.getRandomRGB())
+function spawnRandomBall(userId, imgUrl) {    
+    const ball = new Ball(BALL_SIZE, BALL_MAX_SIZE, BALL_SPEED, Util.getRandomRGB())
     ball.registerUser(userId, imgUrl)
     balls.push(ball)
 

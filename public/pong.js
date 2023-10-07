@@ -119,10 +119,12 @@ $(document).ready(() => {
                         if (b.id === obj.data.id) {
                             initBallObjs(obj.data)
                             b.size = obj.data.size
+                            b.minSize = obj.data.minSize
+                            b.maxSize = obj.data.maxSize
                             b.speed = obj.data.speed
                             b.level = obj.data.level
-                            b.moveX = obj.data.moveX
-                            b.moveY = obj.data.moveY
+                            b.moveX = b.moveX > 0 ? obj.data.speed : -Math.abs(obj.data.speed)
+                            b.moveY = b.moveY > 0 ? obj.data.speed : -Math.abs(obj.data.speed)
                             found = true
                             break
                         }
@@ -212,8 +214,21 @@ $(document).ready(() => {
                     drawDefault()
                 }
 
+                // Block Collision
                 for (let ball of balls) {
-                    updateBrickCollision(block, ball)
+                    findBlockColission(block.x, block.y, block.size, ball.x, ball.y, ball.size, (dx, dy) => {
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            if (checkWallColissionX(ball, dx)) ball.moveX = -ball.moveX
+                        } else {
+                            if (checkWallColissionY(ball, dy)) ball.moveY = -ball.moveY
+                        }
+            
+                        //Generate Particle
+                        spawnParticles(block.x, block.y, block.size, 10)
+                        
+                        block.status = false
+                        socket.emit('update-state', { type : 1, data : block })
+                    })
                 }
             }
         })
@@ -279,18 +294,14 @@ $(document).ready(() => {
                 ball.x += ball.moveX
                 ball.y += ball.moveY
 
+                if (ball.size <= ball.minSize)  {
+                    ball.status = false
+                    spawnParticles(ball.x, ball.y, ball.size, 20)
+                }
+
                 if (checkCollisionX(ball, canvas.width)) ball.moveX = -ball.moveX
                 if (checkCollisionY(ball, canvas.height)) ball.moveY = -ball.moveY
                 checkLimitCollision(ball, canvas.width, canvas.height)
-
-                /*for (let b2 of balls) {
-                    if (ball !== b2 && ball.userId !== b2.userId && checkCollisionOtherBalls(ball, b2)) {
-                        b2.status = false
-
-                        socket.emit('update-state', { type : 2, data : b2 })
-                        break
-                    }
-                }*/
                 
                 function drawDefault() {
                     ctx.fillStyle = ball.color
@@ -303,7 +314,7 @@ $(document).ready(() => {
                         let maxTrail = 3
                         for (let i = 0; i < maxTrail; i++) {
                             const opacity = 1 - (i / maxTrail)
-                            const move = i * (ball.speed * 2)
+                            const move = i * ball.speed
                             const x = ball.moveX >= 0 ? ball.x - move : ball.x + move
                             const y = ball.moveY >= 0 ? ball.y - move : ball.y + move
 
@@ -319,34 +330,47 @@ $(document).ready(() => {
                 } else {
                     drawDefault()
                 }
+
+                for (let b2 of balls) {
+                    if (ball.id !== b2.id && ball.userId !== b2.userId) {
+
+                        const rf = findBlockColission(b2.x, b2.y, b2.size, ball.x, ball.y, ball.size, () => {
+                            const max = 2
+
+                            if (ball.size >= b2.size) {
+                                try {
+                                    if (b2.size > 0) {
+                                        spawnParticles(b2.x, b2.y, b2.size, 4)
+                                    }
+                                } catch (err) {}
+
+                                b2.level -= max
+                                b2.size -= max
+                                b2.moveX = -b2.moveX
+
+                                socket.emit('update-state', { type : 2, data : b2 })
+                                return true
+                            }
+                        })
+
+                        if (rf) break
+                    }
+                }
             }
         }
     }
 
     //Game Collisions
 
-    function updateBrickCollision(block, ball) {
-        const brickCenterX = block.x + wall.size / 2;
-        const brickCenterY = block.y + wall.size / 2;
-        const ballCenterX = ball.x + ball.size / 2;
-        const ballCenterY = ball.y + ball.size / 2;
-        const dx = ballCenterX - brickCenterX;
-        const dy = ballCenterY - brickCenterY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance < (ball.size + wall.size) / 2) {
-            if (Math.abs(dx) > Math.abs(dy)) {
-                if (checkWallColissionX(ball, dx)) ball.moveX = -ball.moveX
-            } else {
-                if (checkWallColissionY(ball, dy)) ball.moveY = -ball.moveY
-            }
-
-            //Generate Particle
-            spawnParticles(block.x, block.y, block.size)
-            
-            block.status = false
-            socket.emit('update-state', { type : 1, data : block })
-        }
+    function findBlockColission(x1, y1, s1, x2, y2, s2, callback) {
+        const cX1 = x1 + s1 / 2
+        const cY1 = y1 + s1 / 2
+        const cX2 = x2 + s2 / 2;
+        const cY2 = y2 + s2 / 2;
+        const dx = cX2 - cX1
+        const dy = cY2 - cY1
+        const distance = Math.sqrt(dx * dx + dy * dy)
+        if (distance < (s2 + s1) / 2) callback(dx, dy)
     }
 
     function checkWallColissionX(ball, dx) {
@@ -371,15 +395,15 @@ $(document).ready(() => {
     }
 
     function checkCollisionOtherBalls(b1, b2) {
-        const distanciaCentros = Math.sqrt((b2.x - b1.x) ** 2 + (b2.y - b1.y) ** 2);
-        return distanciaCentros <= (b1.size + b2.size);
+        const distance = Math.sqrt((b2.x - b1.x) ** 2 + (b2.y - b1.y) ** 2)
+        return distance < b1.size + b2.size
     }
 
 
     //Utils
 
-    function spawnParticles(x, y, size) {
-        let c = 0, max = 10
+    function spawnParticles(x, y, size, num) {
+        let c = 0, max = num
 
         const data = ctx.getImageData(x, y, size, size).data
 
