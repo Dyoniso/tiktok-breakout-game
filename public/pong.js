@@ -71,8 +71,19 @@ $(document).ready(() => {
         socket.on('game-state-start', (obj) => {
             switch (obj.type) {
                 case 1:
-                    for (let b1 of obj.data) initBallObjs(b1)
-                    balls = obj.data
+                    balls = obj.data.map(ball => {
+                        ball.x = Math.random() * canvas.width
+                        ball.y = Math.random() * canvas.height
+                        
+                        if (ball.imgUrl) {
+                            const img = new Image();
+                            img.crossOrigin = "Anonymous";
+                            img.src = ball.imgUrl;
+                            ball.imageData = img
+                        }
+
+                        return ball
+                    })
 
                 break
 
@@ -94,7 +105,7 @@ $(document).ready(() => {
                         block.y = y * size + y * space
                         block.size = size
                         block.msg = obj.data.msg
-                        block.msgLife = 100
+                        block.msgLife = 70
 
                         if (block.imgUrl) {
                             const img = new Image()
@@ -114,24 +125,30 @@ $(document).ready(() => {
 
             switch (obj.type) {
                 case 1:
-                    found = false
-                    for (let b of balls) {
-                        if (b.id === obj.data.id) {
-                            initBallObjs(obj.data)
-                            b.size = obj.data.size
-                            b.minSize = obj.data.minSize
-                            b.maxSize = obj.data.maxSize
-                            b.speed = obj.data.speed
-                            b.level = obj.data.level
-                            b.moveX = b.moveX > 0 ? obj.data.speed : -Math.abs(obj.data.speed)
-                            b.moveY = b.moveY > 0 ? obj.data.speed : -Math.abs(obj.data.speed)
-                            found = true
-                            break
-                        }
-                    }
+                    found = balls.find((ball) => ball.id === obj.data.id)
+                    if (found) {
+                        balls = balls.map(ball => {
+                            if (ball.id === obj.data.id) {
+                                obj.data.x = ball.x
+                                obj.data.y = ball.y
+                                obj.data.imgUrl = ball.imgUrl
+                                obj.data.imageData = ball.imageData
+                                obj.data.moveX = ball.moveX > 0 ? obj.data.speed : -Math.abs(obj.data.speed)
+                                obj.data.moveY = ball.moveY > 0 ? obj.data.speed : -Math.abs(obj.data.speed)
+                                return obj.data
+                            }
+                            return ball
+                        })
+                    } else {
+                        obj.data.x = Math.random() * canvas.width
+                        obj.data.y = Math.random() * canvas.height
 
-                    if (!found) {
-                        initBallObjs(obj.data)
+                        if (obj.data.imgUrl) {
+                            const img = new Image();
+                            img.crossOrigin = "Anonymous";
+                            img.src = obj.data.imgUrl;
+                            obj.data.imageData = img
+                        }
 
                         balls.push(obj.data)
                     }
@@ -173,6 +190,16 @@ $(document).ready(() => {
         balls = []
         wall = null
         console.log('Socket Disconnected!', err.toString())
+
+        ctx.fillStyle = 'black'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+        const msg = 'O jogo terminou!'
+        const msg2 = 'Obrigado por Jogar ^^'
+        ctx.font = "24px Poppins";
+        ctx.strokeStyle = 'white'
+        ctx.strokeText(msg, (canvas.width / 2) - (ctx.measureText(msg).width / 2), (canvas.height / 2) - 28)
+        ctx.strokeText(msg2, (canvas.width / 2) - (ctx.measureText(msg2).width / 2), (canvas.height / 2))
     })
 
     //Animation Core
@@ -184,6 +211,7 @@ $(document).ready(() => {
         renderBalls()
         renderParticleExplosion()
         renderBlocksMessagens()
+        renderBallCombos()
         
         animId = requestAnimationFrame(anim)
     }
@@ -227,7 +255,7 @@ $(document).ready(() => {
                         spawnParticles(block.x, block.y, block.size, 10)
                         
                         block.status = false
-                        socket.emit('update-state', { type : 1, data : block })
+                        socket.emit('update-state', { type : 1, ballId : ball.id, id : block.id })
                     })
                 }
             }
@@ -261,9 +289,10 @@ $(document).ready(() => {
     }
 
     function renderLatency() {
+        const msg = `${latency} ms`
         ctx.fillStyle = 'white'
         ctx.font = "18px Poppins";
-        ctx.fillText(`${latency} ms`, 10, 24)
+        ctx.fillText(msg, canvas.width - ctx.measureText(msg).width - 10, canvas.height - 24)
     }
 
     function renderBlocksMessagens() {
@@ -287,6 +316,23 @@ $(document).ready(() => {
         }
     }
 
+    function renderBallCombos() {
+        for (let ball of balls) {
+            if (ball.msg && ball.msgLife > 0 && ball.status) {
+                const x = ball.x - ball.size
+                const y = ball.y + ball.size
+
+                ctx.textBaseline = 'top';
+                ctx.font = (ball.size / 2) + "px Poppins";
+    
+                ctx.strokeStyle = 'white'
+                ctx.strokeText(ball.msg, x, y)
+    
+                ball.msgLife--;
+            }
+        }
+    }
+
     function renderBalls() {
         for (let ball of balls) {
             if (ball.status) {
@@ -294,21 +340,31 @@ $(document).ready(() => {
                 ball.x += ball.moveX
                 ball.y += ball.moveY
 
-                if (ball.size <= ball.minSize)  {
-                    ball.status = false
-                    spawnParticles(ball.x, ball.y, ball.size, 20)
+                if (ball.invincibleTime > 0) {
+                    ball.invincibleTime--;
                 }
 
-                if (checkCollisionX(ball, canvas.width)) ball.moveX = -ball.moveX
-                if (checkCollisionY(ball, canvas.height)) ball.moveY = -ball.moveY
-                checkLimitCollision(ball, canvas.width, canvas.height)
+                if (ball.size < ball.minSize)  {
+                    ball.status = false
+                    spawnParticles(ball.x, ball.y, ball.size, 20)
+                    socket.emit('update-state', { type : 2, data : ball })
+                    break
+                }
+
+                if (ball.x + ball.size >= canvas.width) ball.moveX = -Math.abs(ball.moveX)
+                if (ball.x < 0) ball.moveX = Math.abs(ball.moveX)
+                if (ball.y + ball.size >= canvas.height) ball.moveY = -Math.abs(ball.moveY)
+                if (ball.y < 0) ball.moveY = Math.abs(ball.moveY)
+                
+                //if (checkCollisionX(ball, canvas.width)) ball.moveX = -ball.moveX
+                //if (checkCollisionY(ball, canvas.height)) ball.moveY = -ball.moveY
                 
                 function drawDefault() {
                     ctx.fillStyle = ball.color
                     ctx.fillRect(ball.x, ball.y, ball.size, ball.size)
                 }
 
-                if (ball.imageData) {
+                if (ball.imageData) {                    
                     try {
                         // Render Trail
                         let maxTrail = 3
@@ -333,27 +389,28 @@ $(document).ready(() => {
 
                 for (let b2 of balls) {
                     if (ball.id !== b2.id && ball.userId !== b2.userId) {
-
-                        const rf = findBlockColission(b2.x, b2.y, b2.size, ball.x, ball.y, ball.size, () => {
-                            const max = 2
-
-                            if (ball.size >= b2.size) {
-                                try {
-                                    if (b2.size > 0) {
-                                        spawnParticles(b2.x, b2.y, b2.size, 4)
-                                    }
-                                } catch (err) {}
-
-                                b2.level -= max
-                                b2.size -= max
-                                b2.moveX = -b2.moveX
-
-                                socket.emit('update-state', { type : 2, data : b2 })
-                                return true
-                            }
-                        })
-
-                        if (rf) break
+                        if (b2.invincibleTime <= 0) {
+                            const rf = findBlockColission(b2.x, b2.y, b2.size, ball.x, ball.y, ball.size, () => {
+                                const max = 2
+    
+                                if (ball.size >= b2.size) {
+                                    try {
+                                        if (b2.size > 0) {
+                                            spawnParticles(b2.x, b2.y, b2.size, 4)
+                                        }
+                                    } catch (err) {}
+    
+                                    b2.level -= max
+                                    b2.size -= max
+                                    b2.moveX = -b2.moveX
+    
+                                    socket.emit('update-state', { type : 2, data : b2 })
+                                    return true
+                                }
+                            })
+    
+                            if (rf) break
+                        }
                     }
                 }
             }
@@ -390,8 +447,10 @@ $(document).ready(() => {
     }
 
     function checkLimitCollision(ball, w, h) {
-        if (ball.x > w) ball.x = w / 2
-        if (ball.y > h) ball.y = h / 2
+        if (ball.x + ball.size > w) ball.x = w
+        if (ball.y + ball.size > h) ball.y = h
+        if (ball.x < 0) ball.x = 0
+        if (ball.y < 0) ball.y = 0
     }
 
     function checkCollisionOtherBalls(b1, b2) {
@@ -439,4 +498,49 @@ $(document).ready(() => {
         if (finish) finish()
     }
 
+    //Enable FullScreen API
+
+    function cancelFullScreen() {
+        var el = document;
+        var requestMethod = el.cancelFullScreen||el.webkitCancelFullScreen||el.mozCancelFullScreen||el.exitFullscreen||el.webkitExitFullscreen;
+        if (requestMethod) { // cancel full screen.
+            requestMethod.call(el);
+        } else if (typeof window.ActiveXObject !== "undefined") { // Older IE.
+            var wscript = new ActiveXObject("WScript.Shell");
+            if (wscript !== null) {
+                wscript.SendKeys("{F11}");
+            }
+        }
+    }
+
+    function requestFullScreen(el) {
+        // Supports most browsers and their versions.
+        var requestMethod = el.requestFullScreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+
+        if (requestMethod) { // Native full screen.
+            requestMethod.call(el);
+        } else if (typeof window.ActiveXObject !== "undefined") { // Older IE.
+            var wscript = new ActiveXObject("WScript.Shell");
+            if (wscript !== null) {
+                wscript.SendKeys("{F11}");
+            }
+        }
+        return false
+    }
+
+    function toggleFullScreen(el) {
+        if (!el) {
+            el = document.body; // Make the body go full screen.
+        }
+        var isInFullScreen = (document.fullScreenElement && document.fullScreenElement !== null) ||  (document.mozFullScreen || document.webkitIsFullScreen);
+
+        if (isInFullScreen) {
+            cancelFullScreen();
+        } else {
+            requestFullScreen(el);
+        }
+        return false;
+    }
+
+    $('body').on('click', (e) => toggleFullScreen($(e.target)[0]))
 })

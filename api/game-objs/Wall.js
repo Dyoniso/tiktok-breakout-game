@@ -26,6 +26,10 @@ class Block {
         this.imgUrl = null
         this.status = true
     }
+
+    break() {
+        this.status = false
+    }
 }
 
 module.exports = class Wall {

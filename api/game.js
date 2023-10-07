@@ -15,7 +15,10 @@ const WALL_ROW = parseInt(process.env.WALL_ROW)
 const WALL_COL = parseInt(process.env.WALL_COL)
 const BALL_SIZE = parseInt(process.env.BALL_SIZE)
 const BALL_SPEED = parseInt(process.env.BALL_SPEED)
+const BALL_MAX_SPEED = parseInt(process.env.BALL_MAX_SPEED)
 const BALL_MAX_SIZE = parseInt(process.env.BALL_MAX_SIZE)
+const BALL_MIN_SIZE = parseInt(process.env.BALL_MIN_SIZE)
+const LIVE_MIN_LIKE = parseInt(process.env.LIVE_MIN_LIKE)
 const WALL_BLOCKS_MIN = 4
 
 //Build Wall
@@ -24,6 +27,8 @@ let balls = []
 
 //Respawn Blocks
 setInterval(() => {
+    if (balls.length === 0) spawnSimpleBall()
+
     balls = balls.filter((b) => b.status === true)
     const min = WALL_BLOCKS_MIN
 
@@ -52,7 +57,7 @@ setInterval(() => {
 
         emitStateStartGlobal(2, wall)
     })
-}, 5000)
+}, 3000)
 
 //Enable Server Socket
 io.on('connection', (socket) => {
@@ -72,25 +77,43 @@ io.on('connection', (socket) => {
     socket.on('update-state', obj => {
         switch (obj.type) {
             case 1:
-                const block = obj.data
-                if (block) {
-                    wall.replaceBlock(block)
-                    emitUpdateState(socket, 2, block)
+                if (obj.id) {
+                    wall.getBlocks((block) => {
+                        if (obj.id === block.id) {
+                            block.break()
+
+                            if (obj.ballId) {
+                                balls.forEach(ball => {
+                                    if (ball.id === obj.ballId && ball.size <= ball.maxSize) {
+                                        ball.addSize(-Math.abs(ball.size * 0.05))
+                                        ball.addSpeed(1)
+                                        ball.msgLife = 0
+
+                                        emitUpdateState(socket, 1, ball)
+                                        return true
+                                    }
+                                })
+                            }
+
+                            emitUpdateState(socket, 2, block)
+                            return true
+                        }
+                    })
                 }
                 break
 
             case 2:
-                const ball = obj.data
-                if (ball) {
-                    for (let b of balls) {
-                        if (b.id === ball.id) {
-                            b.status = ball.status
-                            b.size = ball.size
-                            b.level = ball.level
-                            emitUpdateState(socket, 1, b)
-                            break
+                if (obj.data && obj.data.id) {
+                    balls.forEach(ball => {
+                        if (ball.id === obj.data.id) {
+                            //ball.size = obj.data.size
+                            ball.status = obj.data.status
+                            ball.level = obj.data.level
+                            ball.msgLife = obj.data.msgLife
+                            ball.invincibleTime = 0
+                            return true
                         }
-                    }
+                    })
                 }
                 break
         }
@@ -109,29 +132,43 @@ tkCon.connect().then(state => {
     tkCon.on('chat', p => {
         setBlockImagePixel(p.userId, p.profilePictureUrl, p.comment)
         logger.info(`[Live-Chat @${p.nickname}] ${p.comment}`)
-    });
-    tkCon.on('gift', msg => {
-        let found = false
-        for (let ball of balls) {
-            if (ball.userId === msg.userId)    {
-                ball.addSize(msg.repeatCount <= 0 ? 1 : msg.repeatCount / 2)
-                found = true
-                emitStateGlobal(1, ball)
-                break
-            }
-        }
+    })
 
-        if (!found) spawnRandomBall(msg.userId, msg.profilePictureUrl)
+    tkCon.on('gift', msg => {
+        const arr = balls.filter(i => i.userId === msg.userId)
+        if (arr.length === 0) spawnRandomBall(msg.userId, msg.profilePictureUrl)
+        else {
+            let f = arr.find(ball => ball.size < ball.maxSize)
+            if (!f) spawnRandomBall(msg.userId, msg.profilePictureUrl)
+
+            arr.forEach(ball => {
+                if (ball.size <= ball.maxSize) {
+                    ball.addSize(5)
+                    ball.msg = msg.repeatCount + ' x Combo'
+                    ball.msgLife = 80
+                    emitStateGlobal(1, ball)
+                }
+            })
+        }
         logger.info(`[Live-Gift ${msg.nickname}] Show de Bola!! Uma lenda contribuiu para Live! ID: ${msg.giftId} Repeat ${msg.repeatCount}`)
     });
+
     tkCon.on('like', msg => {
-        for (let ball of balls) {
-            if (ball.userId === msg.userId)    {
-                ball.addSpeed(msg.likeCount <= 0 ? 1 : msg.likeCount / 2)
+        balls.forEach((ball) => {
+            if (ball.userId === msg.userId) {
+                ball.addSize(1)
+                ball.msg(msg.repeatCount + ' x Combo')
+                ball.msgLife = 80
                 emitStateGlobal(1, ball)
-                break
+                return true
             }
+        })
+
+        if (msg.repeatCount > LIVE_MIN_LIKE) {
+            const arr = balls.filter((i) => i.userId === msg.userId)
+            if (arr.length === 0) spawnRandomBall(msg.userId, msg.profilePictureUrl)
         }
+
         logger.info(`[Live-Like ${msg.nickname}] Curtiu a live x${msg.likeCount}`)
     });
 
@@ -156,8 +193,15 @@ tkCon.connect().then(state => {
 // Game
 
 function spawnRandomBall(userId, imgUrl) {    
-    const ball = new Ball(BALL_SIZE, BALL_MAX_SIZE, BALL_SPEED, Util.getRandomRGB())
+    const ball = new Ball(BALL_SIZE, BALL_MAX_SIZE, BALL_MIN_SIZE, BALL_SPEED, BALL_MAX_SPEED,  Util.getRandomRGB())
     ball.registerUser(userId, imgUrl)
+    balls.push(ball)
+
+    emitStateGlobal(1, ball)
+}
+
+function spawnSimpleBall() {    
+    const ball = new Ball(BALL_SIZE, BALL_MAX_SIZE, BALL_MIN_SIZE, BALL_SPEED, BALL_MAX_SPEED, Util.getRandomRGB())
     balls.push(ball)
 
     emitStateGlobal(1, ball)
