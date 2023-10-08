@@ -191,15 +191,7 @@ $(document).ready(() => {
         wall = null
         console.log('Socket Disconnected!', err.toString())
 
-        ctx.fillStyle = 'black'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-        const msg = 'O jogo terminou!'
-        const msg2 = 'Obrigado por Jogar ^^'
-        ctx.font = "24px Poppins";
-        ctx.strokeStyle = 'white'
-        ctx.strokeText(msg, (canvas.width / 2) - (ctx.measureText(msg).width / 2), (canvas.height / 2) - 28)
-        ctx.strokeText(msg2, (canvas.width / 2) - (ctx.measureText(msg2).width / 2), (canvas.height / 2))
+        renderEndGame()
     })
 
     //Animation Core
@@ -208,6 +200,7 @@ $(document).ready(() => {
         renderBackground()
         renderWall()
         renderLatency()
+        renderVersion()
         renderBalls()
         renderParticleExplosion()
         renderBlocksMessagens()
@@ -217,6 +210,18 @@ $(document).ready(() => {
     }
 
     // Game Renders
+
+    function renderEndGame() {
+        ctx.fillStyle = 'black'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+        const msg = 'O jogo terminou!'
+        const msg2 = 'Obrigado por Jogar ^^'
+        ctx.font = "24px Poppins";
+        ctx.strokeStyle = 'white'
+        ctx.strokeText(msg, (canvas.width / 2) - (ctx.measureText(msg).width / 2), (canvas.height / 2) - 24)
+        ctx.strokeText(msg2, (canvas.width / 2) - (ctx.measureText(msg2).width / 2), (canvas.height / 2))
+    }
 
     function renderWall() {
         if (wall) getBricks(wall.blocks, (block) => {
@@ -295,10 +300,17 @@ $(document).ready(() => {
         ctx.fillText(msg, canvas.width - ctx.measureText(msg).width - 10, canvas.height - 24)
     }
 
+    function renderVersion() {
+        const msg = `Alpha 2.0`
+        ctx.fillStyle = 'white'
+        ctx.font = "14px Poppins";
+        ctx.fillText(msg, 10, canvas.height - 24)
+    }
+
     function renderBlocksMessagens() {
         if (wall) {
             getBricks(wall.blocks, (block) => {
-                if (block.msg && block.msgLife > 0) {
+                if (block.status && block.msg && block.msgLife > 0) {
                     const x = block.x - block.size
                     const y = block.y + block.size
         

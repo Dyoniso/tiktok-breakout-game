@@ -7,6 +7,9 @@ const { WebcastPushConnection } = require('tiktok-live-connector')
 const Ball = require('./game-objs/Ball')
 const Wall = require('./game-objs/Wall')
 
+//Game State
+let GAME_START = false
+
 //Env
 const LIVE_NAME = process.env.LIVE_NAME
 const WALL_BACKGROUND = process.env.WALL_BACKGROUND
@@ -61,6 +64,8 @@ setInterval(() => {
 
 //Enable Server Socket
 io.on('connection', (socket) => {
+    //if (!GAME_START) return socket.disconnect()
+
     const clientAddress = socket.handshake.address;
     const clientID = socket.id;
 
@@ -127,6 +132,7 @@ const tkCon = new WebcastPushConnection(LIVE_NAME, {
 
 tkCon.connect().then(state => {
     logger.info('Live successful connected! @'+LIVE_NAME)
+    GAME_START = true
 
     //Live Listeners
     tkCon.on('chat', p => {
@@ -142,24 +148,31 @@ tkCon.connect().then(state => {
             if (!f) spawnRandomBall(msg.userId, msg.profilePictureUrl)
 
             arr.forEach(ball => {
-                if (ball.size <= ball.maxSize) {
-                    ball.addSize(5)
+                if (ball.size <= ball.maxSize) {                    
+                    let size = msg.diamondCount
+                    if (!size || size < 5) size = 5
+                    ball.addSize(size)
+
                     ball.msg = msg.repeatCount + ' x Combo'
                     ball.msgLife = 80
+                    ball.invincibleTime = 40
                     emitStateGlobal(1, ball)
                 }
             })
         }
-        logger.info(`[Live-Gift ${msg.nickname}] Show de Bola!! Uma lenda contribuiu para Live! ID: ${msg.giftId} Repeat ${msg.repeatCount}`)
+        logger.info(`[Live-Gift ${msg.nickname}] Show de Bola!! Uma lenda contribuiu para Live! ID: ${msg.giftId} Custo: ${msg.diamondCount} Repeat: ${msg.repeatCount}`)
     });
 
     tkCon.on('like', msg => {
         balls.forEach((ball) => {
             if (ball.userId === msg.userId) {
-                ball.addSize(1)
-                ball.msg(msg.repeatCount + ' x Combo')
-                ball.msgLife = 80
-                emitStateGlobal(1, ball)
+                if (msg.likeCount % LIVE_MIN_LIKE === 0) {
+                    ball.addSize(5)
+                    ball.msg(msg.repeatCount + ' x Like')
+                    ball.msgLife = 80
+                    ball.invincibleTime = 20
+                    emitStateGlobal(1, ball)
+                }
                 return true
             }
         })
