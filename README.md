@@ -54,3 +54,6 @@ BALL_MIN_SIZE = 25 # Tamanho padrão da bola ao aparecer.
 ```
 
 Perfeito, execute um ```node app.js``` e abra o Projeto no seu navegador!
+
+# Previsualização do Projeto
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/gGOJv0wv5vA/0.jpg)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
