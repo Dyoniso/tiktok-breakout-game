@@ -5,7 +5,7 @@
 Olá, este é um pequeno protótipo de jogo utilizando as funcionalidades da live do TikTok. O projeto foi inspirado no classico jogo Breakout lançado pela Atari em 1976. Onde
 o objetivo principal e quebrar o maior número possível de tijolos com sua bola.
 
-# Como Jogar?
+# ⭐ Como Jogar?
 
 Nesse jogo, a dependerá da sua participação durante a transmissão ao vivo. Você terá duas opções: Pode mandar Mensagem no Chat ou fazer uma Doação.
 
@@ -17,7 +17,7 @@ Imagina só a sua bola gigante arrasando tudo, enquanto os outros jogadores tent
 
 [![preview1](https://i.giphy.com/media/5wm1aIv72KB0oN4Leg/giphy-downsized-large.gif)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
 
-# Como isso é possível?
+# ⭐ Como isso é possível?
 
 De maneira simples, temos um conjunto de códigos que formam uma API (conjunto de instruções para interagir com outros programas). Essa API foi escrita em Node.js e tem a capacidade de se conectar aos serviços de transmissões ao vivo do TikTok.
 
@@ -25,7 +25,7 @@ Para essa conexão acontecer, é necessário informar o nome do usuário que est
 
 Resumindo, a API facilita a comunicação entre os serviços do TikTok e transforma os dados em um jogo competitivo e divertido.
 
-# Como Configurar?
+# ⭐ Como Configurar?
 
 A configuração é bem simples basta clonar este repositório:
 ```
@@ -60,3 +60,7 @@ BALL_MIN_SIZE = 25 # Tamanho padrão da bola ao aparecer.
 Perfeito, execute um ```node app.js``` e abra o Projeto no seu navegador!
 
 ![ts6F18NYDxX1JnbKaa](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/ca39a4df-bc84-42cf-a7a7-31ff6cbc58d9)
+
+<p align="center">
+  🤖 🔥 ⚙️
+</p>
