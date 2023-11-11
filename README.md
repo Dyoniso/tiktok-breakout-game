@@ -19,7 +19,7 @@ De maneira simples, temos um conjunto de códigos que formam uma API (conjunto d
 
 Para essa conexão acontecer, é necessário informar o nome do usuário que está realizando a transmissão ao vivo. Depois de estabelecer a conexão, a API começa a monitorar as atividades da transmissão ao vivo, como interações no chat, doações e outras ações. Todas essas ações identificadas pela API são transformadas em objetos do tipo "Game" e são enviadas para o cliente. O cliente é a parte que interpreta esses dados e os exibe em um "Canvas" (uma espécie de tela ou área visual).
 
-Resumindo, a API facilita a comunicação entre os serviços do TikTok e o que é exibido na tela durante a transmissão ao vivo.
+Resumindo, a API facilita a comunicação entre os serviços do TikTok e transforma os dados em um jogo competitivo e divertido.
 
 # Como Configurar?
 
@@ -36,21 +36,21 @@ npm install .
 Com a instalação concluída. Revise o Arquivo de Configuração do Projeto ```.env``` :
 ```
 # Server
-HOST=192.168.68.116
-PORT=8080
+HOST=localhost # Host Padrão do Servidor
+PORT=8080 # Porta Padrão do Servidor
 
 # Game
-LIVE_NAME = 'USER_LIVE'
-LIVE_MIN_LIKE = 20
-WALL_BACKGROUND = 'blue'
-WALL_SIZE = 32
-WALL_ROW = 8
-WALL_COL = 10
-BALL_SIZE = 30
-BALL_SPEED = 2
-BALL_MAX_SPEED = 8
-BALL_MAX_SIZE = 120
-BALL_MIN_SIZE = 25
+LIVE_NAME = 'USER_LIVE' # Nome do Usário que está executando a live.
+LIVE_MIN_LIKE = 20 # O mínimo de Like para adicionar um nova bola no cenário.
+WALL_BACKGROUND = 'blue' # Background padrão do cênario.
+WALL_SIZE = 32 # Tamanho em pixel dos tijolo da parede.
+WALL_ROW = 8 # Quantidade máxima de linhas que os tijolos irá aparecer.
+WALL_COL = 10 # Coluna máxima que os tijolos irá aparecer.
+BALL_SIZE = 30 # Tamanho em pixel da bola.
+BALL_SPEED = 2 # Velocidade padrão da bola ao aparecer.
+BALL_MAX_SPEED = 8 # Velocidade Máxima da bola.
+BALL_MAX_SIZE = 120 # Tamanho máximo que a bola pode chegar por doação.
+BALL_MIN_SIZE = 25 # Tamanho padrão da bola ao aparecer.
 ```
 
 Perfeito, execute um ```node app.js``` e abra o Projeto no seu navegador!
