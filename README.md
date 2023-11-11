@@ -59,4 +59,4 @@ BALL_MIN_SIZE = 25 # Tamanho padrão da bola ao aparecer.
 
 Perfeito, execute um ```node app.js``` e abra o Projeto no seu navegador!
 
-[![preview2](https://i.giphy.com/media/ts6F18NYDxX1JnbKaa/giphy-downsized-large.gif)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
+![ts6F18NYDxX1JnbKaa](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/ca39a4df-bc84-42cf-a7a7-31ff6cbc58d9)
