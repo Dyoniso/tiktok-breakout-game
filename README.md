@@ -1,4 +1,4 @@
-![image](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/0be60d15-78d4-46c2-8e6b-f9256616d6b5)
+![282263978-0be60d15-78d4-46c2-8e6b-f9256616d6b5](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/08e2a9b9-497a-4200-bcbe-c7ebab0d1589)
 
 Olá, este é um pequeno protótipo de jogo utilizando as funcionalidades da live do TikTok. O projeto foi inspirado no classico jogo Breakout lançado pela Atari em 1976. Onde
 o objetivo principal e quebrar o maior número possível de tijolos com sua bola.
