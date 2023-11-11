@@ -28,3 +28,29 @@ A configuração é bem simples basta clonar este repositório:
 git clone https://github.com/Dyoniso/tiktok-breakout-game
 ```
 
+Com o repositório clonado, entre na pasta e instale os módulos do Node
+```
+npm install .
+```
+
+Com a instalação concluída. Revise o Arquivo de Configuração do Projeto ```.env``` :
+```
+# Server
+HOST=192.168.68.116
+PORT=8080
+
+# Game
+LIVE_NAME = 'USER_LIVE'
+LIVE_MIN_LIKE = 20
+WALL_BACKGROUND = 'blue'
+WALL_SIZE = 32
+WALL_ROW = 8
+WALL_COL = 10
+BALL_SIZE = 30
+BALL_SPEED = 2
+BALL_MAX_SPEED = 8
+BALL_MAX_SIZE = 120
+BALL_MIN_SIZE = 25
+```
+
+Perfeito, execute um ```node app.js``` e abra o Projeto no seu navegador!
