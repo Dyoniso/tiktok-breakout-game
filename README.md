@@ -15,6 +15,8 @@ Agora, se você resolver fazer uma doação, a coisa fica ainda mais emocionante
 
 Imagina só a sua bola gigante arrasando tudo, enquanto os outros jogadores tentam competir. É tipo uma batalha virtual pela glória na arena.
 
+[![preview1](https://i.giphy.com/media/5wm1aIv72KB0oN4Leg/giphy-downsized-large.gif)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
+
 # Como isso é possível?
 
 De maneira simples, temos um conjunto de códigos que formam uma API (conjunto de instruções para interagir com outros programas). Essa API foi escrita em Node.js e tem a capacidade de se conectar aos serviços de transmissões ao vivo do TikTok.
@@ -57,5 +59,4 @@ BALL_MIN_SIZE = 25 # Tamanho padrão da bola ao aparecer.
 
 Perfeito, execute um ```node app.js``` e abra o Projeto no seu navegador!
 
-# Previsualização do Projeto
-[![IMAGE ALT TEXT HERE](https://i.giphy.com/media/5wm1aIv72KB0oN4Leg/giphy-downsized-large.gif)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
+[![preview2](https://i.giphy.com/media/ts6F18NYDxX1JnbKaa/giphy-downsized-large.gif)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
