@@ -59,7 +59,7 @@ BALL_MIN_SIZE = 25 # Tamanho padrão da bola ao aparecer.
 
 Perfeito, execute um ```node app.js``` e abra o Projeto no seu navegador!
 
-![ts6F18NYDxX1JnbKaa](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/ca39a4df-bc84-42cf-a7a7-31ff6cbc58d9)
+![ts6F18NYDxX1JnbKaa](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/b295cdd0-df0a-4874-9684-4fb4bc1c0fe2)
 
 <p align="center">
   🤖 🔥 ⚙️
