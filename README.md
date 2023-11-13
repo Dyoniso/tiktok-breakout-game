@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/08e2a9b9-497a-4200-bcbe-c7ebab0d1589" alt="tiktok-breakout-game"/>
+  <img src="https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/731b4018-db88-46a8-a08d-2322352f6d14" alt="tiktok-breakout-game"/>
 </p>
 
 Olá, este é um pequeno protótipo de jogo utilizando as funcionalidades da live do TikTok. O projeto foi inspirado no classico jogo Breakout lançado pela Atari em 1976. Onde
@@ -15,7 +15,7 @@ Agora, se você resolver fazer uma doação, a coisa fica ainda mais emocionante
 
 Imagina só a sua bola gigante arrasando tudo, enquanto os outros jogadores tentam competir. É tipo uma batalha virtual pela glória na arena.
 
-[![preview1](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/d37e5ffb-14b8-4ec4-a905-f248dbe8bbb9)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
+[![preview1](https://github.com/Dyoniso/tiktok-breakout-game/assets/57969605/c02addc8-c4be-46df-b665-af42214b8164)](https://www.youtube.com/watch?v=gGOJv0wv5vA)
 
 # ⭐ Como isso é possível?
 
